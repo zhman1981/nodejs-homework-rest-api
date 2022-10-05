@@ -7,6 +7,8 @@ const {
   logoutController,
   currentUserController,
   avatarUserController,
+  verifyController,
+  verifyAgainController,
 } = require('../controllers/authControllser')
 
 const {
@@ -23,5 +25,8 @@ router.post('/users/logout', asyncHandler(authMiddleware), asyncHandler(logoutCo
 
 router.post('/users/current', asyncHandler(authMiddleware), asyncHandler(currentUserController));
 router.post('/users/avatars', asyncHandler(authMiddleware), uploadMiddleware, asyncHandler(avatarUserController));
+
+router.post('/users/verify/:verificationToken', asyncHandler(verifyController));
+router.post('/users/verify', asyncHandler(verifyAgainController));
   
 module.exports = router
