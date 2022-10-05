@@ -3,6 +3,8 @@ const createError = require('http-errors');
 const Jimp = require('jimp');
 const path = require('path');
 const fs = require('fs');
+const sha = require('sha256');
+
 
 const {
     registration,
@@ -10,7 +12,10 @@ const {
     logout,
     currentUser,
     setUserAvatar,
+    verifyUser,
+    verifyUserAgain,
 } = require('../services/authService');
+const { confirmMsg } = require('../services/confirmMsg');
 
 const validateBody = (body) => {
   const schema = Joi.object({
@@ -29,7 +34,8 @@ const registrationController = async (req, res) => {
     throw createError(400, validateBody(req.body).error);
   }
   const { email, password, subscription } = req.body;
-  await registration(email, password, subscription);
+  const verificationToken = sha(email+process.env.JWT_SECRET);
+  await registration(email, password, subscription, verificationToken);
   res.status(201).json({
     status: "201 Created",
     ResponseBody: {
@@ -37,7 +43,9 @@ const registrationController = async (req, res) => {
         email: email,
         subscription: subscription || "starter"
       }
-  }})
+    }
+  })
+  confirmMsg(email, verificationToken);
 };
  
 const loginController = async (req, res) => {
@@ -94,6 +102,31 @@ const avatarUserController = async (req, res) => {
     ResponseBody: {
       avatarURL: avatarURL
   }})
+};
+ 
+const verifyController = async (req, res) => {
+  const { verificationToken } = req.params;
+  await verifyUser(verificationToken);
+  res.status(200).json({
+    status: "200 OK",
+    ResponseBody: {
+      ResponseBody: {
+        message: 'Verification successful'
+      }
+  }})
+}; 
+ 
+const verifyAgainController = async (req, res) => {
+  const { email } = req.body;
+  const verificationToken = await verifyUserAgain(email);
+  confirmMsg(email, verificationToken);
+  res.status(200).json({
+    status: "200 OK",
+    ResponseBody: {
+      ResponseBody: {
+        message: 'Verification email sent'
+      }
+  }})
  };
 
 module.exports = {
@@ -102,4 +135,6 @@ module.exports = {
   logoutController,
   currentUserController,
   avatarUserController,
+  verifyController,
+  verifyAgainController,
 }
